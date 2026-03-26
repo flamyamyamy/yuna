@@ -32,7 +32,7 @@ module.exports = {
     const fetched = await client.users.fetch(user.id, { force: true });
     const banner = fetched.bannerURL({ size: 1024, extension: 'png' });
 
-    // ? schöner Fehlertext
+    // ? schï¿½ner Fehlertext
     if (!banner) {
       return interaction.reply({
         content: '? This user has no banner',

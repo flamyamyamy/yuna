@@ -26,7 +26,10 @@ const nsfwLevels = {
 function cleanInvite(input) {
   return input
     .replace('https://discord.gg/', '')
+    .replace('http://discord.gg/', '')
+    .replace('https://www.discord.gg/', '')
     .replace('https://discord.com/invite/', '')
+    .replace('http://discord.com/invite/', '')
     .trim();
 }
 
@@ -52,87 +55,189 @@ module.exports = {
       InteractionContextType.PrivateChannel
     )
     .addStringOption(option =>
-      option.setName('invite').setDescription('Invite').setRequired(true)
+      option
+        .setName('invite')
+        .setDescription('Invite code or invite link')
+        .setRequired(true)
     ),
 
   async execute(interaction, client) {
-    const inviteCode = cleanInvite(
-      interaction.options.getString('invite')
-    );
+    const rawInvite = interaction.options.getString('invite');
+    const inviteCode = cleanInvite(rawInvite);
 
     try {
       const invite = await client.fetchInvite(inviteCode, {
-        withCounts: true
+        withCounts: true,
+        withExpiration: true
       });
 
       const guild = invite.guild;
-
-      const icon = guild.iconURL?.({ size: 1024 }) || null;
+      
+      const icon = guild.iconURL?.({ size: 1024, extension: 'png' }) || null;
+      const banner = guild.bannerURL?.({ size: 1024, extension: 'png' }) || null;
 
       const formattedFeatures = guild.features?.length
         ? guild.features
             .map(formatFeatureName)
-            .map(f => `- ${f}`)
+            .map(feature => `- ${feature}`)
             .join('\n')
-        : 'None';
+        : 'No features';
 
-      // ?? BASE EMBED (OHNE FEATURES)
       const embed = new EmbedBuilder()
         .setColor(0x2b2d31)
         .setTitle(guild.name)
-        .setDescription('Click the button to reveal features.')
-        .addFields(
-          { name: 'Server ID', value: `\`${guild.id}\``, inline: true },
-          { name: 'Members', value: `${invite.memberCount}`, inline: true },
-          { name: 'Verification', value: verificationLevels[guild.verificationLevel] }
-        )
+        .setURL(`https://discord.gg/${invite.code}`)
         .setThumbnail(icon)
+        .setDescription(guild.description || 'No server description.')
+        .addFields(
+          {
+            name: 'Server ID',
+            value: `\`${guild.id}\``,
+            inline: true
+          },
+          {
+            name: 'Invite Code',
+            value: `\`${invite.code}\``,
+            inline: true
+          },
+          {
+            name: 'Channel',
+            value: invite.channel ? `<#${invite.channel.id}>` : 'Unknown',
+            inline: true
+          },
+          {
+            name: 'Members',
+            value: invite.memberCount ? `${invite.memberCount}` : 'Unknown',
+            inline: true
+          },
+          {
+            name: 'Online',
+            value: invite.presenceCount ? `${invite.presenceCount}` : 'Unknown',
+            inline: true
+          },
+          {
+            name: 'Boosts',
+            value: `${guild.premiumSubscriptionCount || 0}`,
+            inline: true
+          },
+          {
+            name: 'Created',
+            value: guild.createdTimestamp
+              ? `<t:${Math.floor(guild.createdTimestamp / 1000)}:F>\n<t:${Math.floor(guild.createdTimestamp / 1000)}:R>`
+              : 'Unknown',
+            inline: false
+          },
+          {
+            name: 'Inviter',
+            value: invite.inviter
+              ? `${invite.inviter.tag}\n\`${invite.inviter.id}\``
+              : 'Unknown',
+            inline: true
+          },
+          {
+            name: 'Verification',
+            value: verificationLevels[guild.verificationLevel] ?? 'Unknown',
+            inline: true
+          },
+          {
+            name: 'NSFW Level',
+            value: nsfwLevels[guild.nsfwLevel] ?? 'Unknown',
+            inline: true
+          },
+          {
+            name: 'Vanity URL',
+            value: guild.vanityURLCode
+              ? `discord.gg/${guild.vanityURLCode}`
+              : 'None',
+            inline: false
+          }
+        )
+        .setFooter({ text: `Requested by ${interaction.user.username}` })
         .setTimestamp();
 
-      const button = new ButtonBuilder()
-        .setCustomId(`show_features_${interaction.id}`)
-        .setLabel('Show Features')
-        .setStyle(ButtonStyle.Secondary);
+      if (banner) {
+        embed.setImage(banner);
+      }
 
-      const row = new ActionRowBuilder().addComponents(button);
+      const buttons = [
+        new ButtonBuilder()
+          .setLabel('Open Invite')
+          .setStyle(ButtonStyle.Link)
+          .setURL(`https://discord.gg/${invite.code}`),
+
+        new ButtonBuilder()
+          .setCustomId(`server_features_${interaction.id}`)
+          .setLabel('Show Features')
+          .setStyle(ButtonStyle.Secondary)
+      ];
+
+      if (icon) {
+        buttons.push(
+          new ButtonBuilder()
+            .setLabel('Icon URL')
+            .setStyle(ButtonStyle.Link)
+            .setURL(icon)
+        );
+      }
+
+      if (banner) {
+        buttons.push(
+          new ButtonBuilder()
+            .setLabel('Banner URL')
+            .setStyle(ButtonStyle.Link)
+            .setURL(banner)
+        );
+      }
+
+      const row = new ActionRowBuilder().addComponents(...buttons);
 
       await interaction.reply({
         embeds: [embed],
         components: [row]
       });
 
-      const msg = await interaction.fetchReply();
+      const reply = await interaction.fetchReply();
 
-      const collector = msg.createMessageComponentCollector({
+      const buttonInteraction = await reply.awaitMessageComponent({
+        filter: i => i.customId === `server_features_${interaction.id}`,
         time: 60000
-      });
+      }).catch(() => null);
 
-      collector.on('collect', async i => {
-        if (i.customId !== `show_features_${interaction.id}`) return;
+      if (!buttonInteraction) return;
 
-        // ?? UPDATED EMBED MIT CODEBLOCK
-        const updated = EmbedBuilder.from(embed).addFields({
-          name: `Features (${guild.features.length})`,
-          value: `\`\`\`yaml\n${formattedFeatures}\n\`\`\``
-        });
+      const featuresEmbed = new EmbedBuilder()
+        .setColor(0x2b2d31)
+        .setTitle(`${guild.name} Features`)
+        .setDescription(`\`\`\`yaml\n${formattedFeatures}\n\`\`\``)
+        .setFooter({ text: `${guild.features?.length || 0} feature(s)` })
+        .setTimestamp();
 
-        // ?? Button deaktivieren
-        const disabledRow = new ActionRowBuilder().addComponents(
-          ButtonBuilder.from(button).setDisabled(true)
-        );
+      if (banner) {
+        featuresEmbed.setImage(banner);
+      }
 
-        await i.update({
-          embeds: [updated],
-          components: [disabledRow]
-        });
-      });
+      if (icon) {
+        featuresEmbed.setThumbnail(icon);
+      }
 
-    } catch (err) {
-      console.error(err);
-      await interaction.reply({
-        content: '? Invalid invite.',
+      await buttonInteraction.reply({
+        embeds: [featuresEmbed],
         flags: 64
       });
+    } catch (error) {
+      console.error(error);
+
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp({
+          content: 'Invalid invite or I could not fetch that server.',
+          flags: 64
+        }).catch(() => null);
+      } else {
+        await interaction.reply({
+          content: 'Invalid invite or I could not fetch that server.',
+          flags: 64
+        });
+      }
     }
   }
 };

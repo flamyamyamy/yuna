@@ -45,7 +45,7 @@ module.exports = {
       new ButtonBuilder()
         .setLabel('Support')
         .setStyle(ButtonStyle.Link)
-        .setURL('https://discord.gg/5uaK2vCXzC')
+        .setURL('https://discord.gg/s3xX82Xfav')
     );
 
     await interaction.reply({

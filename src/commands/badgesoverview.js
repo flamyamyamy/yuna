@@ -26,16 +26,17 @@ module.exports = {
     await guild.members.fetch();
 
     const e = {
-      staff: '<a:staff:1485854153073885265>',
+      staff: '<:Staff:1486088043373789324>',
       partner: '<:discordpartner:1485856247591997470>',
-      bughunter: '<:bughunter:1485854069301186640>',
+      bughunter: '<:discordbughunter:1486089501146353768>',
       bughuntergold: '<:bughuntergold:1485854044353204224>',
+      hypesquad: '<:hypesquadevents:1485854115102986260>',
       bravery: '<:hypesquadbravery:1485853974262321242>',
-      brilliance: '<a:houseofbrilliance:1485853943547428915>',
+      brilliance: '<:Brilliance:1486088638776479884>',
       balance: '<:hypesquadbalance:1485853862899224667>',
       earlysupporter: '<:earlysupporter:1485853825247088680>',
-      earlydev: '<:earlyverifiedbotdev:1485853789276737677>',
-      alumni: '<:alumnibadge:1485864110280282295>',
+      earlydev: '<:earlyverifiedbotdeveloper:1486091043811365026>',
+      alumni: '<:moderatorprogramsalumni:1486090665631682622>',
       booster: '<:booster:1485917206041722912>',
       newmember: '<:newmember:1485916842701619301>'
     };
@@ -60,6 +61,7 @@ module.exports = {
       partner: 0,
       bughunter: 0,
       bughuntergold: 0,
+      hypesquad: 0, 
       bravery: 0,
       brilliance: 0,
       balance: 0,
@@ -83,7 +85,7 @@ module.exports = {
       ) VALUES (
         @user_id, @guild_id,
         @staff, @partner, @bughunter, @bughuntergold,
-        @bravery, @brilliance, @balance,
+        @hypesquad, @bravery, @brilliance, @balance,
         @earlysupporter, @earlydev, @alumni,
         @last_checked
       )
@@ -92,6 +94,7 @@ module.exports = {
         partner = excluded.partner,
         bughunter = excluded.bughunter,
         bughuntergold = excluded.bughuntergold,
+        hypesquad = excluded.hypesquad,
         bravery = excluded.bravery,
         brilliance = excluded.brilliance,
         balance = excluded.balance,
@@ -111,6 +114,7 @@ module.exports = {
         totals.partner += row.partner;
         totals.bughunter += row.bughunter;
         totals.bughuntergold += row.bughuntergold;
+        totals.hypesquad += row.hypesquad;
         totals.bravery += row.bravery;
         totals.brilliance += row.brilliance;
         totals.balance += row.balance;
@@ -132,6 +136,7 @@ module.exports = {
         partner: flags?.has('Partner') ? 1 : 0,
         bughunter: flags?.has('BugHunterLevel1') ? 1 : 0,
         bughuntergold: flags?.has('BugHunterLevel2') ? 1 : 0,
+        hypesquad: flags?.has('Hypesquad') ? 1 : 0,
         bravery: flags?.has('HypeSquadOnlineHouse1') ? 1 : 0,
         brilliance: flags?.has('HypeSquadOnlineHouse2') ? 1 : 0,
         balance: flags?.has('HypeSquadOnlineHouse3') ? 1 : 0,
@@ -158,6 +163,7 @@ module.exports = {
           totals.partner += row.partner;
           totals.bughunter += row.bughunter;
           totals.bughuntergold += row.bughuntergold;
+          totals.hypesquad += row.hypesquad;
           totals.bravery += row.bravery;
           totals.brilliance += row.brilliance;
           totals.balance += row.balance;
@@ -180,6 +186,7 @@ module.exports = {
       .setDescription([
         `${e.staff} Discord Staff: **${totals.staff}**`,
         `${e.partner} Discord Partners: **${totals.partner}**`,
+        `${e.hypesquad} Hypesquad Event: **${totals.hypesquad}**`,
         `${e.brilliance} Brilliance: **${totals.brilliance}**`,
         `${e.bravery} Bravery: **${totals.bravery}**`,
         `${e.balance} Balance: **${totals.balance}**`,
