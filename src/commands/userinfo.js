@@ -165,33 +165,26 @@ module.exports = {
           );
       }
 
-      container
-        .addSeparatorComponents(new SeparatorBuilder())
-        .addTextDisplayComponents(
-          new TextDisplayBuilder().setContent(
-            `*Requested by ${interaction.user.username}*`
-          )
+      container.addActionRowComponents(
+        new ActionRowBuilder().addComponents(
+          new ButtonBuilder()
+            .setLabel('Avatar URL')
+            .setStyle(ButtonStyle.Link)
+            .setURL(avatar),
+          ...(banner
+            ? [
+                new ButtonBuilder()
+                  .setLabel('Banner URL')
+                  .setStyle(ButtonStyle.Link)
+                  .setURL(banner)
+              ]
+            : []),
+          new ButtonBuilder()
+            .setLabel('Profile')
+            .setStyle(ButtonStyle.Link)
+            .setURL(`https://discord.com/users/${fetchedUser.id}`)
         )
-        .addActionRowComponents(
-          new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-              .setLabel('Avatar URL')
-              .setStyle(ButtonStyle.Link)
-              .setURL(avatar),
-            ...(banner
-              ? [
-                  new ButtonBuilder()
-                    .setLabel('Banner URL')
-                    .setStyle(ButtonStyle.Link)
-                    .setURL(banner)
-                ]
-              : []),
-            new ButtonBuilder()
-              .setLabel('Profile')
-              .setStyle(ButtonStyle.Link)
-              .setURL(`https://discord.com/users/${fetchedUser.id}`)
-          )
-        );
+      );
 
       await interaction.reply({
         flags: MessageFlags.IsComponentsV2,

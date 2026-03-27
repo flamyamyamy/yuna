@@ -152,14 +152,7 @@ module.exports = {
             )
           );
       }
-
-      container
-        .addSeparatorComponents(new SeparatorBuilder())
-        .addTextDisplayComponents(
-          new TextDisplayBuilder().setContent(
-            `*Requested by ${interaction.user.username}*`
-          )
-        )
+         container
         .addActionRowComponents(
           new ActionRowBuilder().addComponents(
             new ButtonBuilder()

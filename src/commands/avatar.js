@@ -46,38 +46,24 @@ module.exports = {
         .setAccentColor(0x2b2d31)
         .addTextDisplayComponents(
           new TextDisplayBuilder().setContent(
-            [
-              `# ${user.username}'s avatar`,
-              '',
-              `**User:** ${user.tag}`,
-              `**ID:** \`${user.id}\``
-            ].join('\n')
+            `# ${user.username}'s avatar`
           )
         )
+
         .addSeparatorComponents(new SeparatorBuilder())
         .addMediaGalleryComponents(
           new MediaGalleryBuilder().addItems(
             new MediaGalleryItemBuilder()
               .setURL(avatar)
-              .setDescription(`${user.username}'s avatar`)
           )
         )
         .addSeparatorComponents(new SeparatorBuilder())
-        .addTextDisplayComponents(
-          new TextDisplayBuilder().setContent(
-            `*Requested by ${interaction.user.username}*`
-          )
-        )
         .addActionRowComponents(
           new ActionRowBuilder().addComponents(
             new ButtonBuilder()
               .setLabel('Open Avatar')
               .setStyle(ButtonStyle.Link)
-              .setURL(avatar),
-            new ButtonBuilder()
-              .setLabel('Profile')
-              .setStyle(ButtonStyle.Link)
-              .setURL(`https://discord.com/users/${user.id}`)
+              .setURL(avatar)
           )
         );
 
@@ -85,6 +71,7 @@ module.exports = {
         flags: MessageFlags.IsComponentsV2,
         components: [container]
       });
+
     } catch (error) {
       console.error('avatar error:', error);
 

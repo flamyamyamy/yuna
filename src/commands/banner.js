@@ -53,39 +53,21 @@ module.exports = {
       const container = new ContainerBuilder()
         .setAccentColor(fetched.accentColor || 0x2b2d31)
         .addTextDisplayComponents(
-          new TextDisplayBuilder().setContent(
-            [
-              `# ${user.username}'s banner`,
-              '',
-              `**User:** ${fetched.tag}`,
-              `**ID:** \`${fetched.id}\``
-            ].join('\n')
-          )
+          new TextDisplayBuilder().setContent(`# ${user.username}'s banner`)
         )
         .addSeparatorComponents(new SeparatorBuilder())
         .addMediaGalleryComponents(
           new MediaGalleryBuilder().addItems(
-            new MediaGalleryItemBuilder()
-              .setURL(banner)
-              .setDescription(`${user.username}'s banner`)
+            new MediaGalleryItemBuilder().setURL(banner)
           )
         )
         .addSeparatorComponents(new SeparatorBuilder())
-        .addTextDisplayComponents(
-          new TextDisplayBuilder().setContent(
-            `*Requested by ${interaction.user.username}*`
-          )
-        )
         .addActionRowComponents(
           new ActionRowBuilder().addComponents(
             new ButtonBuilder()
               .setLabel('Open Banner')
               .setStyle(ButtonStyle.Link)
-              .setURL(banner),
-            new ButtonBuilder()
-              .setLabel('Profile')
-              .setStyle(ButtonStyle.Link)
-              .setURL(`https://discord.com/users/${fetched.id}`)
+              .setURL(banner)
           )
         );
 
