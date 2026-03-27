@@ -1,11 +1,14 @@
 const {
   SlashCommandBuilder,
-  EmbedBuilder,
-  ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
+  ActionRowBuilder,
   ApplicationIntegrationType,
-  InteractionContextType
+  InteractionContextType,
+  MessageFlags,
+  ContainerBuilder,
+  TextDisplayBuilder,
+  SeparatorBuilder
 } = require('discord.js');
 
 module.exports = {
@@ -23,34 +26,38 @@ module.exports = {
     ),
 
   async execute(interaction) {
-
     const uptimeSeconds = process.uptime();
     const startedAt = Math.floor(Date.now() / 1000 - uptimeSeconds);
-
     const serverCount = interaction.client.guilds.cache.size || 0;
+    const botAvatar = interaction.client.user.displayAvatarURL({ size: 1024 });
 
-    const embed = new EmbedBuilder()
-      .setColor('#2b2d31')
-      .setTitle('Yuna Profile')
-      .setThumbnail(interaction.client.user.displayAvatarURL())
-      .setDescription(`
+    const text = new TextDisplayBuilder().setContent(
+`# Yuna Profile
+
+![bot avatar](${botAvatar})
+
 **Uptime:** <t:${startedAt}:R>  
 **Servers:** ${serverCount}  
 **Host:** Hetzner Cloud  
 
-*Developed by flamyamy*
-      `);
+*Developed by flamyamy*`
+    );
 
-    const row = new ActionRowBuilder().addComponents(
+    const buttons = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setLabel('Support')
         .setStyle(ButtonStyle.Link)
         .setURL('https://discord.gg/s3xX82Xfav')
     );
 
+    const container = new ContainerBuilder()
+      .addTextDisplayComponents(text)
+      .addSeparatorComponents(new SeparatorBuilder())
+      .addActionRowComponents(buttons);
+
     await interaction.reply({
-      embeds: [embed],
-      components: [row]
+      flags: MessageFlags.IsComponentsV2,
+      components: [container]
     });
   }
 };
