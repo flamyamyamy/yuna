@@ -154,7 +154,7 @@ module.exports = {
           .setDescription(
             response.status === 403
               ? 'I do not have permission to search messages here.\nMake sure the bot has **Read Message History** in the target channel.'
-              : 'Something went wrong while trying to search messages.'
+              : 'Something went wrong while trying to search messages..'
           )
           .addFields({
             name: 'Status',
