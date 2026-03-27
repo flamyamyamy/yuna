@@ -1,14 +1,16 @@
 const {
   SlashCommandBuilder,
-  ButtonBuilder,
-  ButtonStyle,
-  ActionRowBuilder,
   ApplicationIntegrationType,
   InteractionContextType,
-  MessageFlags,
   ContainerBuilder,
+  SectionBuilder,
   TextDisplayBuilder,
-  SeparatorBuilder
+  ThumbnailBuilder,
+  SeparatorBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  MessageFlags
 } = require('discord.js');
 
 module.exports = {
@@ -29,31 +31,42 @@ module.exports = {
     const uptimeSeconds = process.uptime();
     const startedAt = Math.floor(Date.now() / 1000 - uptimeSeconds);
     const serverCount = interaction.client.guilds.cache.size || 0;
-    const botAvatar = interaction.client.user.displayAvatarURL({ size: 1024 });
+    const avatar = interaction.client.user.displayAvatarURL({ size: 512 });
 
-    const text = new TextDisplayBuilder().setContent(
-`# Yuna Profile
+    const profileSection = new SectionBuilder()
+      .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(
+          [
+            '# Yuna Profile',
+            '',
+            `**Uptime:** <t:${startedAt}:R>`,
+            `**Servers:** ${serverCount}`,
+            '**Host:** Hetzner Cloud',
+            '',
+            '*Developed by flamyamy*'
+          ].join('\n')
+        )
+      )
+      .setThumbnailAccessory(
+        new ThumbnailBuilder()
+          .setURL(avatar)
+          .setDescription('Bot avatar')
+      );
 
-![bot avatar](${botAvatar})
+    const divider = new SeparatorBuilder();
 
-**Uptime:** <t:${startedAt}:R>  
-**Servers:** ${serverCount}  
-**Host:** Hetzner Cloud  
-
-*Developed by flamyamy*`
-    );
-
-    const buttons = new ActionRowBuilder().addComponents(
+    const supportRow = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setLabel('Support')
         .setStyle(ButtonStyle.Link)
-        .setURL('https://discord.gg/s3xX82Xfav')
+        .setURL('https://discord.gg/F9VdyDymtC')
     );
 
     const container = new ContainerBuilder()
-      .addTextDisplayComponents(text)
-      .addSeparatorComponents(new SeparatorBuilder())
-      .addActionRowComponents(buttons);
+      .setAccentColor(0x5865f2)
+      .addSectionComponents(profileSection)
+      .addSeparatorComponents(divider)
+      .addActionRowComponents(supportRow);
 
     await interaction.reply({
       flags: MessageFlags.IsComponentsV2,

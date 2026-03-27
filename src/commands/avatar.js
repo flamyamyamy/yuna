@@ -1,11 +1,16 @@
 const {
   SlashCommandBuilder,
-  EmbedBuilder,
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
   InteractionContextType,
-  ApplicationIntegrationType
+  ApplicationIntegrationType,
+  ContainerBuilder,
+  TextDisplayBuilder,
+  MediaGalleryBuilder,
+  MediaGalleryItemBuilder,
+  SeparatorBuilder,
+  MessageFlags
 } = require('discord.js');
 
 module.exports = {
@@ -22,36 +27,78 @@ module.exports = {
       InteractionContextType.PrivateChannel
     )
     .addUserOption(opt =>
-      opt.setName('user')
+      opt
+        .setName('user')
         .setDescription('Target user')
+        .setRequired(false)
     ),
 
   async execute(interaction) {
-    const user = interaction.options.getUser('user') || interaction.user;
+    try {
+      const user = interaction.options.getUser('user') || interaction.user;
 
-    const avatar = user.displayAvatarURL({
-      size: 1024,
-      extension: 'png'
-    });
+      const avatar = user.displayAvatarURL({
+        size: 1024,
+        extension: 'png'
+      });
 
-    const embed = new EmbedBuilder()
-      .setColor(0x2b2d31)
-      .setTitle(`${user.username}'s avatar`)
-      .setURL(`https://discord.com/users/${user.id}`)
-      .setImage(avatar)
-      .setFooter({ text: `User ID: ${user.id}` })
-      .setTimestamp();
+      const container = new ContainerBuilder()
+        .setAccentColor(0x2b2d31)
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            [
+              `# ${user.username}'s avatar`,
+              '',
+              `**User:** ${user.tag}`,
+              `**ID:** \`${user.id}\``
+            ].join('\n')
+          )
+        )
+        .addSeparatorComponents(new SeparatorBuilder())
+        .addMediaGalleryComponents(
+          new MediaGalleryBuilder().addItems(
+            new MediaGalleryItemBuilder()
+              .setURL(avatar)
+              .setDescription(`${user.username}'s avatar`)
+          )
+        )
+        .addSeparatorComponents(new SeparatorBuilder())
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            `*Requested by ${interaction.user.username}*`
+          )
+        )
+        .addActionRowComponents(
+          new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+              .setLabel('Open Avatar')
+              .setStyle(ButtonStyle.Link)
+              .setURL(avatar),
+            new ButtonBuilder()
+              .setLabel('Profile')
+              .setStyle(ButtonStyle.Link)
+              .setURL(`https://discord.com/users/${user.id}`)
+          )
+        );
 
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setLabel('Open Avatar')
-        .setStyle(ButtonStyle.Link)
-        .setURL(avatar)
-    );
+      await interaction.reply({
+        flags: MessageFlags.IsComponentsV2,
+        components: [container]
+      });
+    } catch (error) {
+      console.error('avatar error:', error);
 
-    await interaction.reply({
-      embeds: [embed],
-      components: [row]
-    });
+      if (interaction.replied || interaction.deferred) {
+        await interaction.followUp({
+          content: 'There was an error while fetching the avatar.',
+          flags: 64
+        }).catch(() => null);
+      } else {
+        await interaction.reply({
+          content: 'There was an error while fetching the avatar.',
+          flags: 64
+        }).catch(() => null);
+      }
+    }
   }
 };

@@ -1,11 +1,18 @@
 const {
   SlashCommandBuilder,
-  EmbedBuilder,
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
   InteractionContextType,
-  ApplicationIntegrationType
+  ApplicationIntegrationType,
+  ContainerBuilder,
+  SectionBuilder,
+  TextDisplayBuilder,
+  ThumbnailBuilder,
+  SeparatorBuilder,
+  MediaGalleryBuilder,
+  MediaGalleryItemBuilder,
+  MessageFlags
 } = require('discord.js');
 
 function formatHex(color) {
@@ -58,11 +65,11 @@ module.exports = {
         .setRequired(false)
     ),
 
-  async execute(interaction, client) {
+  async execute(interaction) {
     try {
       const user = interaction.options.getUser('user') || interaction.user;
+      const fetchedUser = await interaction.client.users.fetch(user.id, { force: true });
 
-      const fetchedUser = await client.users.fetch(user.id, { force: true });
       const member = interaction.guild
         ? await interaction.guild.members.fetch(user.id).catch(() => null)
         : null;
@@ -80,105 +87,115 @@ module.exports = {
       const flags = fetchedUser.flags ? fetchedUser.flags.toArray() : [];
       const badges = formatBadges(flags);
 
-      const embed = new EmbedBuilder()
-        .setColor(fetchedUser.accentColor || 0x2b2d31)
-        .setTitle(`${fetchedUser.username}'s profile`)
-        .setURL(`https://discord.com/users/${fetchedUser.id}`)
-        .setThumbnail(avatar)
-        .addFields(
-          {
-            name: 'User',
-            value: `${fetchedUser.tag}\n\`${fetchedUser.id}\``,
-            inline: true
-          },
-          {
-            name: 'Bot',
-            value: fetchedUser.bot ? 'Yes' : 'No',
-            inline: true
-          },
-          {
-            name: 'Accent Color',
-            value: formatHex(fetchedUser.accentColor),
-            inline: true
-          },
-          {
-            name: 'Badges',
-            value: badges,
-            inline: false
-          },
-          {
-            name: 'Account Created',
-            value: `<t:${Math.floor(fetchedUser.createdTimestamp / 1000)}:F>\n(<t:${Math.floor(fetchedUser.createdTimestamp / 1000)}:R>)`,
-            inline: false
-          }
-        )
-        .setFooter({ text: `Requested by ${interaction.user.username}` })
-        .setTimestamp();
+      const createdAt = `<t:${Math.floor(fetchedUser.createdTimestamp / 1000)}:F>\n(<t:${Math.floor(fetchedUser.createdTimestamp / 1000)}:R>)`;
+
+      const joinedAt = member?.joinedTimestamp
+        ? `<t:${Math.floor(member.joinedTimestamp / 1000)}:F>\n(<t:${Math.floor(member.joinedTimestamp / 1000)}:R>)`
+        : 'Unknown';
+
+      const highestRole =
+        member?.roles?.highest && interaction.guild && member.roles.highest.id !== interaction.guild.id
+          ? `<@&${member.roles.highest.id}>`
+          : 'None';
+
+      const boosterSince = member?.premiumSinceTimestamp
+        ? `<t:${Math.floor(member.premiumSinceTimestamp / 1000)}:R>`
+        : 'No';
+
+      const mainText = [
+        `# ${fetchedUser.username}'s profile`,
+        '',
+        `**User**`,
+        `${fetchedUser.tag}`,
+        `\`${fetchedUser.id}\``,
+        '',
+        `**Bot:** ${fetchedUser.bot ? 'Yes' : 'No'}`,
+        `**Accent Color:** ${formatHex(fetchedUser.accentColor)}`,
+        `**Badges:** ${badges}`,
+        '',
+        `**Account Created:**`,
+        `${createdAt}`
+      ].join('\n');
+
+      const container = new ContainerBuilder()
+        .setAccentColor(fetchedUser.accentColor || 0x2b2d31)
+        .addSectionComponents(
+          new SectionBuilder()
+            .addTextDisplayComponents(
+              new TextDisplayBuilder().setContent(mainText)
+            )
+            .setThumbnailAccessory(
+              new ThumbnailBuilder()
+                .setURL(avatar)
+                .setDescription(`${fetchedUser.username}'s avatar`)
+            )
+        );
 
       if (member) {
-        embed.addFields(
-          {
-            name: 'Joined Server',
-            value: member.joinedTimestamp
-              ? `<t:${Math.floor(member.joinedTimestamp / 1000)}:F>\n(<t:${Math.floor(member.joinedTimestamp / 1000)}:R>)`
-              : 'Unknown',
-            inline: false
-          },
-          {
-            name: 'Nickname',
-            value: member.nickname || 'None',
-            inline: true
-          },
-          {
-            name: 'Highest Role',
-            value:
-              member.roles.highest && member.roles.highest.id !== interaction.guild.id
-                ? `<@&${member.roles.highest.id}>`
-                : 'None',
-            inline: true
-          },
-          {
-            name: 'Server Booster',
-            value: member.premiumSinceTimestamp
-              ? `<t:${Math.floor(member.premiumSinceTimestamp / 1000)}:R>`
-              : 'No',
-            inline: true
-          }
-        );
+        container
+          .addSeparatorComponents(new SeparatorBuilder())
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(
+              [
+                '## Server Information',
+                '',
+                `**Joined Server:**`,
+                `${joinedAt}`,
+                '',
+                `**Nickname:** ${member.nickname || 'None'}`,
+                `**Highest Role:** ${highestRole}`,
+                `**Server Booster:** ${boosterSince}`
+              ].join('\n')
+            )
+          );
       }
 
       if (banner) {
-        embed.setImage(banner);
+        container
+          .addSeparatorComponents(new SeparatorBuilder())
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent('## Banner')
+          )
+          .addMediaGalleryComponents(
+            new MediaGalleryBuilder().addItems(
+              new MediaGalleryItemBuilder()
+                .setURL(banner)
+                .setDescription(`${fetchedUser.username}'s banner`)
+            )
+          );
       }
 
-      const buttons = [
-        new ButtonBuilder()
-          .setLabel('Avatar URL')
-          .setStyle(ButtonStyle.Link)
-          .setURL(avatar)
-      ];
-
-      if (banner) {
-        buttons.push(
-          new ButtonBuilder()
-            .setLabel('Banner URL')
-            .setStyle(ButtonStyle.Link)
-            .setURL(banner)
+      container
+        .addSeparatorComponents(new SeparatorBuilder())
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            `*Requested by ${interaction.user.username}*`
+          )
+        )
+        .addActionRowComponents(
+          new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+              .setLabel('Avatar URL')
+              .setStyle(ButtonStyle.Link)
+              .setURL(avatar),
+            ...(banner
+              ? [
+                  new ButtonBuilder()
+                    .setLabel('Banner URL')
+                    .setStyle(ButtonStyle.Link)
+                    .setURL(banner)
+                ]
+              : []),
+            new ButtonBuilder()
+              .setLabel('Profile')
+              .setStyle(ButtonStyle.Link)
+              .setURL(`https://discord.com/users/${fetchedUser.id}`)
+          )
         );
-      }
-
-      buttons.push(
-        new ButtonBuilder()
-          .setLabel('Profile')
-          .setStyle(ButtonStyle.Link)
-          .setURL(`https://discord.com/users/${fetchedUser.id}`)
-      );
-
-      const row = new ActionRowBuilder().addComponents(...buttons);
 
       await interaction.reply({
-        embeds: [embed],
-        components: [row]
+        flags: MessageFlags.IsComponentsV2,
+        components: [container]
       });
     } catch (error) {
       console.error('userinfo error:', error);

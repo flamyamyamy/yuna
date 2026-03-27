@@ -10,10 +10,14 @@ const {
 } = require('discord.js');
 
 const fs = require('fs');
-const path = require('path');
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers]
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent
+  ]
 });
 
 client.commands = new Collection();
@@ -25,7 +29,7 @@ const commandFiles = fs
   .filter(file => file.endsWith('.js'));
 
 for (const file of commandFiles) {
-  const command = require(`./commands/${file}`);
+  const command = require(`./commands/${file}`); 
 
   try {
     command.data.toJSON();
@@ -40,16 +44,12 @@ for (const file of commandFiles) {
   }
 }
 
+client.once('ready', async () => {
+  console.log(`Logged in as ${client.user.tag}`);
 
-client.once('clientReady', async () => {
-  console.log(`? Logged in as ${client.user.tag}`);
-  
-  client.user.setStatus('dnd');
-
-
-
+  client.user.setPresence({
     status: 'dnd',
-    activities; [
+    activities: [
       {
         name: 'your profile',
         type: ActivityType.Watching
@@ -71,7 +71,6 @@ client.once('clientReady', async () => {
   }
 });
 
-
 client.on('interactionCreate', async interaction => {
   if (!interaction.isChatInputCommand()) return;
 
@@ -82,7 +81,6 @@ client.on('interactionCreate', async interaction => {
     await command.execute(interaction, client);
   } catch (err) {
     console.error(err);
-
 
     if (interaction.replied || interaction.deferred) {
       await interaction.followUp({
